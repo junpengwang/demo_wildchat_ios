@@ -11,6 +11,9 @@
 #define kWilddogUrl @"https://demochat.wilddogio.com/msg"
 
 @interface ViewController ()
+{
+    CGRect _originFrame;
+}
 @property (nonatomic,assign) BOOL newMessagesOnTop;
 @end
 
@@ -23,6 +26,7 @@
     
     _wilddog = [[Wilddog alloc] initWithUrl:kWilddogUrl];
     
+    _originFrame = self.view.frame;
     
     self.name = [NSString stringWithFormat:@"Guest%d", arc4random() % 1000];
     [_nameField setTitle:self.name forState:UIControlStateNormal];
@@ -154,38 +158,26 @@
 
 - (void)keyboardWillShow:(NSNotification*)notification
 {
-    [self moveView:[notification userInfo] up:YES];
+    CGRect endRect = [[notification.userInfo objectForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    CGRect convertRect=[self.view convertRect:endRect fromView:nil];
+    float duration = [[notification.userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    [UIView animateWithDuration:duration animations:^{
+        
+        CGRect frame = self.view.frame;
+        frame.origin.y = -  convertRect.size.height;
+        self.view.frame = frame;
+    }];
 }
 
 - (void)keyboardWillHide:(NSNotification*)notification
 {
-    [self moveView:[notification userInfo] up:NO];
-}
-
-- (void)moveView:(NSDictionary*)userInfo up:(BOOL)up
-{
-    CGRect keyboardEndFrame;
-    [[userInfo objectForKey:UIKeyboardFrameEndUserInfoKey]
-     getValue:&keyboardEndFrame];
-    
-    UIViewAnimationCurve animationCurve;
-    [[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey]
-     getValue:&animationCurve];
-    
-    NSTimeInterval animationDuration;
-    [[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey]
-     getValue:&animationDuration];
-    
-    [UIView beginAnimations:nil context:nil];
-    [UIView setAnimationBeginsFromCurrentState:YES];
-    [UIView setAnimationDuration:animationDuration];
-    [UIView setAnimationCurve:animationCurve];
-    
-    CGRect keyboardFrame = [self.view convertRect:keyboardEndFrame toView:nil];
-    int y = keyboardFrame.size.height * (up ? -1 : 1);
-    self.view.frame = CGRectOffset(self.view.frame, 0, y);
-    
-    [UIView commitAnimations];
+    float duration = [[notification.userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    [UIView animateWithDuration:duration animations:^{
+        
+        CGRect frame = self.view.frame;
+        frame.origin.y = _originFrame.origin.y;
+        self.view.frame = frame;
+    }];
 }
 
 - (void)touchesBegan:(NSSet*)touches withEvent:(UIEvent*)event
